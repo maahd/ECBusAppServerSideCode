@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>EC Bus Locations</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+      html, body, #map-canvas {
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+      }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script>
+// Note: This example requires that you consent to location sharing when
+// prompted by your browser. If you see a blank space instead of the map, this
+// is probably because you have denied permission for location sharing.
+
+var markers = [];
+var map;
+
+function initialize() {
+
+  function getLocation()
+  {
+    $.get( "http://54.86.161.214/EC_bus_app/get_location.php", function( data ) {
+      markers=[];
+      var buses = data;
+      var number_of_buses = buses.slice(0,1);
+      buses = buses.slice(2);
+      buses = buses.slice(0,-1);
+      
+      var bus_coordinates_and_numbers = buses.split(/[ ]+/);
+      var length_of_array = bus_coordinates_and_numbers.length;
+
+    // Turn a single dimensional array into a multi-dimensional array
+      
+      for (var index = 0; index < bus_coordinates_and_numbers.length; index+= 3)
+          markers.push( bus_coordinates_and_numbers.slice(index, index + 3) );      
+    });
+  }
+
+  getLocation();
+  setInterval(getLocation, 5000);
+
+  var mapOptions = {
+    zoom: 16
+  };
+  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+var image = "icon_97.png";
+var busMarker = new google.maps.Marker;
+var allMarkers = [];
+
+  function draw()
+  { 
+    removeMarker();
+    for (i=0;i<markers.length; i = i + 1){
+      var x = markers[i][0];
+      var y = markers[i][1];
+      var myLatlng = new google.maps.LatLng(x,y);
+      busMarker = new google.maps.Marker({
+          position: myLatlng,
+          icon: image,
+          title: markers[i][2]
+      });
+      busMarker.setMap(map);   
+      allMarkers.push(busMarker);
+    }  
+  }
+
+  function removeMarker() 
+  {
+    if (allMarkers) {
+        for (i=0; i < allMarkers.length; i++) {
+            allMarkers[i].setMap(null);
+        }
+    allMarkers.length = 0;
+    }
+  }
+
+  setTimeout(draw, 1000);
+  setInterval(draw, 5000);
+
+  // Try HTML5 geolocation
+  if(navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var pos = new google.maps.LatLng(position.coords.latitude,
+                                       position.coords.longitude);
+
+      var infowindow = new google.maps.InfoWindow({
+        map: map,
+        position: pos,
+        content: 'Your location'
+      });
+
+      map.setCenter(pos);
+    }, function() {
+      handleNoGeolocation(true);
+    });
+  } else {
+    // Browser doesn't support Geolocation
+    handleNoGeolocation(false);
+  }
+}
+
+function handleNoGeolocation(errorFlag) {
+  if (errorFlag) {
+    var content = 'Error: The Geolocation service failed.';
+  } else {
+    var content = 'Error: Your browser doesn\'t support geolocation.';
+  }
+
+  var options = {
+    map: map,
+    position: new google.maps.LatLng(60, 105),
+    content: content
+  };
+
+  var infowindow = new google.maps.InfoWindow(options);
+  map.setCenter(options.position);
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>
+  </head>
+  <body>
+    <div id="map-canvas"></div>
+  </body>
+</html>
+
